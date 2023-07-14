@@ -23,17 +23,20 @@ def argument_parser():
     parser.add_argument('--render-last', type=bool, default=True)
     parser.add_argument('--figure-path', type=str, default='figures/')
     
-    # DDQN arguments
+    # PER arguments
     parser.add_argument('--gamma', type=float, default=0.99)
-    parser.add_argument('--tau', type=int, default=0.01)
+    parser.add_argument('--tau', type=float, default=0.01)
+    parser.add_argument('--alpha', type=float, default=0.2)
+    parser.add_argument('--beta', type=float, default=0.6)
+    parser.add_argument('--prior_eps', type=float, default=1e-6)
     
     # model training arguments
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--batch-size', type=int, default=128)
     parser.add_argument('--optimizer', type=str, default='adamw')
-    parser.add_argument('--memory-size', type=int, default=4096)
+    parser.add_argument('--memory-size', type=int, default=8192)
     parser.add_argument('--num-episodes', type=int, default=2000)
-    parser.add_argument('--model-path', type=str, default='tmp/model.pt')
+    parser.add_argument('--model-path', type=str, default='trained_models/model.pt')
     parser.add_argument('--load-model', action='store_true')
     
     return parser.parse_args()
@@ -57,17 +60,17 @@ def main():
         lr=args.lr,
     ).to(device)
     
-    algorithm = PER(   n_observations=n_observations, 
-                        n_actions=n_actions,
-                        model=model,
-                        tau=args.tau,
-                        gamma=args.gamma,
-                        memory_size=args.memory_size,
-                        model_path=args.model_path,
-                        batch_size=args.batch_size,
-                        alpha=0.2,
-                        beta=0.6,
-                        prior_eps=1e-6
+    algorithm = PER(n_observations=n_observations,
+                    n_actions=n_actions,
+                    model=model,
+                    tau=args.tau,
+                    gamma=args.gamma,
+                    memory_size=args.memory_size,
+                    model_path=args.model_path,
+                    batch_size=args.batch_size,
+                    alpha=args.alpha,
+                    beta=args.beta,
+                    prior_eps=args.prior_eps,
                     )
         
     if args.model_path:
@@ -107,7 +110,7 @@ def main():
             history_loss = algorithm.replay(args.batch_size)
             plot_timeseries(history_loss, args.figure_path, 'episode', 'loss', 'Training Loss')
             plot_timeseries(timesteps, args.figure_path, 'episode', 'timesteps', 'Training Timesteps')
-            if cnt >= max(timesteps):
+            if timesteps[-1] >= max(timesteps[:-1]):
                 algorithm.save_model()
                 
     if args.render_last:
