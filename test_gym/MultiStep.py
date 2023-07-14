@@ -12,7 +12,7 @@ from utils import *
 log = logging.getLogger(__name__)
 from argparse import ArgumentParser
 
-from Algorithms.MultiStep import MultiStep
+from algorithms.MultiStep import MultiStep
 from models.CartPole import CartPole
 import gym
 

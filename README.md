@@ -57,7 +57,7 @@ python test_gym/PER.py \
 
 **Multi-step Deep Q Learning**
 
-```
+```python
 python test_gym/MultiStep.py \
     --num-episodes 1500 \
     --memory-size 8192 \

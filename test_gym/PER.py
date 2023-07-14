@@ -12,7 +12,7 @@ from utils import *
 log = logging.getLogger(__name__)
 from argparse import ArgumentParser
 
-from Algorithms.PER import PER
+from algorithms.PER import PER
 from models.CartPole import CartPole
 import gym
 

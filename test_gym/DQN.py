@@ -12,7 +12,7 @@ from utils import *
 log = logging.getLogger(__name__)
 from argparse import ArgumentParser
 
-from Algorithms.DQN import DQN
+from algorithms.DQN import DQN
 from models.CartPole import CartPole
 import gym
 
