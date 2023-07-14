@@ -38,7 +38,7 @@ python test_gym/DDQN.py \
     --model-path trained_models/model.pt 
 ```
 
-** Prioritized Experience Replay Deep Q Learning**
+**Prioritized Experience Replay Deep Q Learning**
 
 ```python
 python test_gym/PER.py \
@@ -55,7 +55,7 @@ python test_gym/PER.py \
     --model-path trained_models/model.pt 
 ```
 
-** Multi-step Deep Q Learning**
+**Multi-step Deep Q Learning**
 
 ```
 python test_gym/MultiStep.py \
