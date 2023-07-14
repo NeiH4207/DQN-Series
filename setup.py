@@ -10,6 +10,7 @@ setup(
            "scikit-learn==1.2.2", 
            "scipy==1.10.1", 
            "torch==2.0.1", 
+           "gym==0.26.2"
        ],
        entry_points={
            'console_scripts': [
