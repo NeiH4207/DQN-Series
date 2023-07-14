@@ -25,13 +25,13 @@ def argument_parser():
     
     # DDQN arguments
     parser.add_argument('--gamma', type=float, default=0.99)
-    parser.add_argument('--tau', type=int, default=0.01)
+    parser.add_argument('--tau', type=float, default=0.01)
     
     # model training arguments
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--batch-size', type=int, default=128)
     parser.add_argument('--optimizer', type=str, default='adamw')
-    parser.add_argument('--memory-size', type=int, default=4096)
+    parser.add_argument('--memory-size', type=int, default=8192)
     parser.add_argument('--num-episodes', type=int, default=1500)
     parser.add_argument('--model-path', type=str, default='trained/model.pt')
     parser.add_argument('--load-model', action='store_true')
@@ -43,7 +43,7 @@ def main():
     if args.show_screen:
         env = gym.make('CartPole-v1', render_mode='human')
     else:
-        env = gym.make('CartPole-v1')
+        env = gym.make('CartPole-v1', render_mode='rgb_array')
         
     n_observations, n_actions = env.observation_space.shape[0], env.action_space.n
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -103,7 +103,7 @@ def main():
             history_loss = algorithm.replay(args.batch_size)
             plot_timeseries(history_loss, args.figure_path, 'episode', 'loss', 'Training Loss')
             plot_timeseries(timesteps, args.figure_path, 'episode', 'timesteps', 'Training Timesteps')
-            if cnt >= max(timesteps):
+            if timesteps[-1] >= max(timesteps[:-1]):
                 algorithm.save_model()
                 
     if args.render_last:

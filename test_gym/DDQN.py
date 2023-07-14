@@ -25,7 +25,7 @@ def argument_parser():
     
     # DDQN arguments
     parser.add_argument('--gamma', type=float, default=0.99)
-    parser.add_argument('--tau', type=int, default=0.01)
+    parser.add_argument('--tau', type=float, default=0.01)
     
     # model training arguments
     parser.add_argument('--lr', type=float, default=1e-3)
@@ -103,7 +103,7 @@ def main():
             history_loss = algorithm.replay(args.batch_size)
             plot_timeseries(history_loss, args.figure_path, 'episode', 'loss', 'Training Loss')
             plot_timeseries(timesteps, args.figure_path, 'episode', 'timesteps', 'Training Timesteps')
-            if cnt >= max(timesteps):
+            if timesteps[-1] >= max(timesteps[:-1]):
                 algorithm.save_model()
                 
     if args.render_last:
