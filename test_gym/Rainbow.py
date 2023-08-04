@@ -68,18 +68,21 @@ def main():
     model = model.to(device)
     
     algorithm = Rainbow(   
-                    n_observations=n_observations, 
-                    n_actions=n_actions,
-                    model=model,
-                    tau=args.tau,
-                    gamma=args.gamma,
-                    memory_size=args.memory_size,
-                    model_path=args.model_path,
-                    batch_size=args.batch_size,
-                    alpha=args.alpha,
-                    beta=args.beta,
-                    prior_eps=args.prior_eps,
-                    n_step=args.n_step)
+        n_observations=n_observations, 
+        n_actions=n_actions,
+        model=model,
+        tau=args.tau,
+        gamma=args.gamma,
+        memory_size=args.memory_size,
+        model_path=args.model_path,
+        batch_size=args.batch_size,
+        alpha=args.alpha,
+        beta=args.beta,
+        prior_eps=args.prior_eps,
+        n_step=args.n_step,
+        v_min=0,
+        v_max=500
+    )
         
     if args.model_path:
         model_dir = os.path.dirname(args.model_path)
@@ -89,7 +92,7 @@ def main():
         if args.load_model:
             algorithm.load_model(args.model_path)
     
-    args.figure_path = os.path.join(args.figure_path, 'MultiStep')
+    args.figure_path = os.path.join(args.figure_path, 'Rainbow')
     
     if not os.path.exists(args.figure_path):
         os.makedirs(args.figure_path)

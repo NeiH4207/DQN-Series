@@ -60,6 +60,13 @@ class Rainbow(DQN):
     def reset_memory(self):        
         self.memory.size = 0
         
+    def get_action(self, state, valid_actions=None):
+        state = torch.FloatTensor(np.array(state)).to(self.device)
+        act_values = self.policy_net.predict(state)[0]
+        if valid_actions is not None:
+            act_values[~valid_actions] = -float('inf')
+        return int(np.argmax(act_values))  # returns action
+        
     def calculate_dqn_loss(
         self, 
         samples: Dict[str, np.ndarray], 
@@ -138,13 +145,11 @@ class Rainbow(DQN):
             torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
             self.policy_net.optimizer.step()
             # PER: update priorities
+            self.soft_update()
             loss_for_prior = elementwise_loss.detach().cpu().numpy()
             new_priorities = loss_for_prior + self.prior_eps
             self.memory.update_priorities(samples['indices'], new_priorities)
             
-            self.policy_net.reset_noise()
-            self.target_net.reset_noise()
-            self.soft_update()
             total_loss += loss.item()
             mean_loss = total_loss / (i + 1)
             
