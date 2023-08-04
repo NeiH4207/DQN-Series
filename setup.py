@@ -11,7 +11,8 @@ setup(
            "scipy==1.10.1", 
            "torch==2.0.1", 
            "gym==0.26.2",
-           "pygame==2.5.0"
+           "pygame==2.5.0",
+           "tqdm==4.65.0"
        ],
        entry_points={
            'console_scripts': [

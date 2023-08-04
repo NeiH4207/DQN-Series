@@ -9,6 +9,8 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 import logging
+
+from algorithms.DQN import DQN
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
 class Memory(object):
@@ -45,30 +47,14 @@ class Memory(object):
            
         return state_batch, action_batch, reward_batch, next_state_batch, done_batch
 
-class DQN():
+class NoisyNet(DQN):
     def __init__(self, n_observations=None, n_actions=None, model=None,
                     tau=0.005, gamma=0.99, epsilon=0.9, epsilon_min=0.05, 
                     epsilon_decay=0.99,
                     memory_size=4096,  model_path=None):
-        super().__init__()
-        self.n_observations = n_observations
-        self.n_actions = n_actions
-        self.memory_size = memory_size
-        self.memory = Memory(memory_size)
-        self.gamma = gamma
-        self.epsilon = epsilon
-        self.epsilon_min = epsilon_min
-        self.epsilon_decay = epsilon_decay
-        self.tau = tau
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.policy_net = model
-        self.target_net = deepcopy(model)
-        self.model_path = model_path
-        self.history = {
-            'loss': [],
-            'reward': []
-        }
-        self.counter = 0
+        super().__init__(n_observations, n_actions, model, tau, 
+                         gamma, epsilon, epsilon_min, epsilon_decay,
+                         memory_size, model_path)
         
     def fully_mem(self, perc=1.0):
         return len(self.memory) / (self.memory_size - 1) >= perc
@@ -83,13 +69,10 @@ class DQN():
         state = torch.FloatTensor(np.array(state)).to(self.device)
         act_values = self.policy_net.predict(state)[0]
         
-        if np.random.rand() <= self.epsilon:
-            if valid_actions is not None:
-                act_values[~valid_actions] = -float('inf')
-                return np.random.choice(np.arange(self.n_actions)[valid_actions])
-            else:
-                return np.random.choice(np.arange(self.n_actions))
-        return int(np.argmax(act_values))  # returns action
+        if valid_actions is not None:
+            act_values[~valid_actions] = -float('inf')
+            
+        return int(np.argmax(act_values))
         
     def replay(self, batch_size, verbose=False):
 
@@ -134,7 +117,8 @@ class DQN():
             mean_loss = total_loss / (i + 1)
             
         self.policy_net.add_loss(mean_loss)
-        self.adaptiveEGreedy()
+        self.policy_net.reset_noise()
+        self.target_net.reset_noise()
         if self.counter % int(1 / self.tau) == 0:
             self.hard_update()
             

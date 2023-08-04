@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 from argparse import ArgumentParser
 
 from algorithms.DQN import DQN
-from models.CartPole import CartPole
+from models.CartPole.DQN import CartPole
 import gym
 
 def argument_parser():
@@ -32,7 +32,7 @@ def argument_parser():
     parser.add_argument('--batch-size', type=int, default=128)
     parser.add_argument('--optimizer', type=str, default='adamw')
     parser.add_argument('--memory-size', type=int, default=8192)
-    parser.add_argument('--num-episodes', type=int, default=1500)
+    parser.add_argument('--num-episodes', type=int, default=1000)
     parser.add_argument('--model-path', type=str, default='trained/model.pt')
     parser.add_argument('--load-model', action='store_true')
     

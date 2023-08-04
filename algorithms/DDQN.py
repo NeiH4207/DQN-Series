@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from tqdm import tqdm
 
-from Algorithms.DQN import DQN
+from algorithms.DQN import DQN
 
 class DDQN(DQN):
     def __init__(self, n_observations=None, n_actions=None, model=None,
@@ -19,9 +19,13 @@ class DDQN(DQN):
     def get_action(self, state, valid_actions=None):
         state = torch.FloatTensor(np.array(state)).to(self.device)
         act_values = self.policy_net.predict(state)[0]
-        # set value of invalid actions to -inf
-        if valid_actions is not None:
-            act_values[~valid_actions] = -float('inf')
+        
+        if np.random.rand() <= self.epsilon:
+            if valid_actions is not None:
+                act_values[~valid_actions] = -float('inf')
+                return np.random.choice(np.arange(self.n_actions)[valid_actions])
+            else:
+                return np.random.choice(np.arange(self.n_actions))
         return int(np.argmax(act_values))  # returns action
         
     def replay(self, batch_size, verbose=False):
@@ -43,7 +47,6 @@ class DDQN(DQN):
             next_state_batch =  torch.Tensor(minibatch[3]).to(self.device)
             done_batch = torch.Tensor(minibatch[4]).to(self.device)
                 
-            
             next_state_values = torch.zeros(batch_size, device=self.device)
             with torch.no_grad():
                 next_action_batch = self.policy_net(next_state_batch).max(1)[1]
@@ -51,13 +54,12 @@ class DDQN(DQN):
                 next_state_values = next_state_values.gather(1, next_action_batch.reshape(-1, 1)).squeeze()
             
             expected_state_action_values = (1 - done_batch) * (next_state_values.unsqueeze(1) * self.gamma) + reward_batch
-
             state_action_values = self.policy_net(state_batch).gather(1, action_batch.reshape(-1, 1))
             
             # Compute Huber loss
             criterion = nn.SmoothL1Loss()
             loss = criterion(state_action_values, expected_state_action_values)
-                # Optimize the model
+            # Optimize the model
             self.policy_net.optimizer.zero_grad()
             loss.backward()
             # In-place gradient clipping
@@ -68,6 +70,5 @@ class DDQN(DQN):
             mean_loss = total_loss / (i + 1)
             
         self.policy_net.add_loss(mean_loss)
-        self.policy_net.reset_noise()
-        self.target_net.reset_noise()
+        self.adaptiveEGreedy()
         return self.policy_net.get_loss()

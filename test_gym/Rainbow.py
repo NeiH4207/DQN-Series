@@ -12,8 +12,8 @@ from utils import *
 log = logging.getLogger(__name__)
 from argparse import ArgumentParser
 
-from algorithms.DDQN import DDQN
-from models.CartPole.DQN import CartPole
+from algorithms.Rainbow import Rainbow
+from models.CartPole.Rainbow import CartPole
 import gym
 
 def argument_parser():
@@ -26,6 +26,11 @@ def argument_parser():
     # DDQN arguments
     parser.add_argument('--gamma', type=float, default=0.99)
     parser.add_argument('--tau', type=float, default=0.01)
+    parser.add_argument('--alpha', type=float, default=0.2)
+    parser.add_argument('--beta', type=float, default=0.6)
+    parser.add_argument('--prior_eps', type=float, default=1e-6)
+    
+    parser.add_argument('--n-step', type=int, default=3)
     
     # model training arguments
     parser.add_argument('--lr', type=float, default=1e-3)
@@ -33,7 +38,7 @@ def argument_parser():
     parser.add_argument('--optimizer', type=str, default='adamw')
     parser.add_argument('--memory-size', type=int, default=8192)
     parser.add_argument('--num-episodes', type=int, default=1000)
-    parser.add_argument('--model-path', type=str, default='trained/model.pt')
+    parser.add_argument('--model-path', type=str, default='tmp/model.pt')
     parser.add_argument('--load-model', action='store_true')
     
     return parser.parse_args()
@@ -53,18 +58,28 @@ def main():
     model = CartPole(
         n_observations=n_observations,
         n_actions=n_actions,
+        atom_size=51, 
+        v_min=0,
+        v_max=500,
         optimizer=args.optimizer,
         lr=args.lr,
-    ).to(device)
+        device=device
+    )
+    model = model.to(device)
     
-    algorithm = DDQN(   n_observations=n_observations, 
-                        n_actions=n_actions,
-                        model=model,
-                        tau=args.tau,
-                        gamma=args.gamma,
-                        memory_size=args.memory_size,
-                        model_path=args.model_path
-                    )
+    algorithm = Rainbow(   
+                    n_observations=n_observations, 
+                    n_actions=n_actions,
+                    model=model,
+                    tau=args.tau,
+                    gamma=args.gamma,
+                    memory_size=args.memory_size,
+                    model_path=args.model_path,
+                    batch_size=args.batch_size,
+                    alpha=args.alpha,
+                    beta=args.beta,
+                    prior_eps=args.prior_eps,
+                    n_step=args.n_step)
         
     if args.model_path:
         model_dir = os.path.dirname(args.model_path)
@@ -74,7 +89,7 @@ def main():
         if args.load_model:
             algorithm.load_model(args.model_path)
     
-    args.figure_path = os.path.join(args.figure_path, 'DDQN')
+    args.figure_path = os.path.join(args.figure_path, 'MultiStep')
     
     if not os.path.exists(args.figure_path):
         os.makedirs(args.figure_path)
@@ -91,12 +106,15 @@ def main():
             env.render()
             action = algorithm.get_action(state)
             next_state, reward, done, truncated, _ = env.step(action)
-            reward = reward if not done else -1
+            transition = [state, action, reward, next_state, done]
+            one_step_transition = algorithm.memory_n.store(*transition)
+            if one_step_transition:
+                algorithm.memory.store(*one_step_transition)
             algorithm.memorize(state, action, reward, next_state, done)
             state = next_state
             if done or truncated:
                 break
-            
+        
         timesteps.append(cnt)
         
         if episode % 3 == 0 and algorithm.fully_mem(0.25):

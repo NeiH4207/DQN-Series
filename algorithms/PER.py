@@ -11,7 +11,7 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from Algorithms.DQN import DQN
+from algorithms.DQN import DQN
 from src.priority import PrioritizedReplayBuffer
 
 class PER(DQN):
@@ -45,6 +45,18 @@ class PER(DQN):
         self.beta = beta
         self.prior_eps = prior_eps
         
+    def get_action(self, state, valid_actions=None):
+        state = torch.FloatTensor(np.array(state)).to(self.device)
+        act_values = self.policy_net.predict(state)[0]
+        
+        if np.random.rand() <= self.epsilon:
+            if valid_actions is not None:
+                act_values[~valid_actions] = -float('inf')
+                return np.random.choice(np.arange(self.n_actions)[valid_actions])
+            else:
+                return np.random.choice(np.arange(self.n_actions))
+        return int(np.argmax(act_values))  # returns action
+        
     def replay(self, batch_size, verbose=False):
 
         if len(self.memory) < batch_size:
@@ -69,9 +81,7 @@ class PER(DQN):
             
             next_state_values = torch.zeros(batch_size, device=self.device)
             with torch.no_grad():
-                next_action_batch = self.policy_net(next_state_batch).max(1)[1]
-                next_state_values = self.target_net(next_state_batch)
-                next_state_values = next_state_values.gather(1, next_action_batch.reshape(-1, 1)).squeeze()
+                next_state_values = self.target_net(next_state_batch).max(1)[0]
                 
             expected_state_action_values = (1 - done_batch) * (next_state_values * self.gamma) + reward_batch
 
@@ -98,8 +108,7 @@ class PER(DQN):
             mean_loss = total_loss / (i + 1)
             
         self.policy_net.add_loss(mean_loss)
-        self.policy_net.reset_noise()
-        self.target_net.reset_noise()
+        self.adaptiveEGreedy()
         
         if self.counter % int(1 / self.tau) == 0:
             self.hard_update()

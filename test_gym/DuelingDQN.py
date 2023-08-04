@@ -12,8 +12,8 @@ from utils import *
 log = logging.getLogger(__name__)
 from argparse import ArgumentParser
 
-from algorithms.DDQN import DDQN
-from models.CartPole.DQN import CartPole
+from algorithms.DQN import DQN
+from models.CartPole.DuelingNet import CartPole
 import gym
 
 def argument_parser():
@@ -43,7 +43,7 @@ def main():
     if args.show_screen:
         env = gym.make('CartPole-v1', render_mode='human')
     else:
-        env = gym.make('CartPole-v1')
+        env = gym.make('CartPole-v1', render_mode='rgb_array')
         
     n_observations, n_actions = env.observation_space.shape[0], env.action_space.n
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -57,7 +57,7 @@ def main():
         lr=args.lr,
     ).to(device)
     
-    algorithm = DDQN(   n_observations=n_observations, 
+    algorithm = DQN(   n_observations=n_observations, 
                         n_actions=n_actions,
                         model=model,
                         tau=args.tau,
@@ -74,7 +74,7 @@ def main():
         if args.load_model:
             algorithm.load_model(args.model_path)
     
-    args.figure_path = os.path.join(args.figure_path, 'DDQN')
+    args.figure_path = os.path.join(args.figure_path, 'DuelingDQN')
     
     if not os.path.exists(args.figure_path):
         os.makedirs(args.figure_path)

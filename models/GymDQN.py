@@ -48,11 +48,6 @@ class GymDQN(nn.Module):
         output = self.forward(x)
         return output.detach().cpu().numpy()
     
-    def reset_noise(self):
-        """Reset all noisy layers."""
-        self.advance.reset_noise()
-        self.value.reset_noise()
-    
     def set_optimizer(self, optimizer, lr):
         if optimizer == "sgd":
             self.optimizer = optim.SGD(self.parameters(), lr=lr)	
