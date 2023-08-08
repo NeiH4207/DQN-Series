@@ -19,8 +19,8 @@ class CartPole(GymDQN):
         super(GymDQN, self).__init__()
         self.n_observations = n_observations
         self.n_actions = n_actions
-        self.layer1 = nn.Linear(n_observations, 128)
-        self.layer2 = nn.Linear(128, 128)
+        self.layer1 = nn.Linear(n_observations, 512)
+        self.layer2 = nn.Linear(512, 128)
         self.Q = nn.Linear(128, n_actions)
         self.set_optimizer(optimizer, lr)
         self.loss_history = np.array([])

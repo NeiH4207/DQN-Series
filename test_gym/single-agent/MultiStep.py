@@ -8,12 +8,12 @@ import logging
 import os
 import torch
 from tqdm import tqdm
-from utils import *
+from src.utils import *
 log = logging.getLogger(__name__)
 from argparse import ArgumentParser
 
-from algorithms.Rainbow import Rainbow
-from models.CartPole.Rainbow import CartPole
+from algorithms.MultiStep import MultiStep
+from models.CartPole.DQN import CartPole
 import gym
 
 def argument_parser():
@@ -58,31 +58,23 @@ def main():
     model = CartPole(
         n_observations=n_observations,
         n_actions=n_actions,
-        atom_size=51, 
-        v_min=0,
-        v_max=500,
         optimizer=args.optimizer,
         lr=args.lr,
-        device=device
-    )
-    model = model.to(device)
+    ).to(device)
     
-    algorithm = Rainbow(   
-        n_observations=n_observations, 
-        n_actions=n_actions,
-        model=model,
-        tau=args.tau,
-        gamma=args.gamma,
-        memory_size=args.memory_size,
-        model_path=args.model_path,
-        batch_size=args.batch_size,
-        alpha=args.alpha,
-        beta=args.beta,
-        prior_eps=args.prior_eps,
-        n_step=args.n_step,
-        v_min=0,
-        v_max=500
-    )
+    algorithm = MultiStep(   
+                    n_observations=n_observations, 
+                    n_actions=n_actions,
+                    model=model,
+                    tau=args.tau,
+                    gamma=args.gamma,
+                    memory_size=args.memory_size,
+                    model_path=args.model_path,
+                    batch_size=args.batch_size,
+                    alpha=args.alpha,
+                    beta=args.beta,
+                    prior_eps=args.prior_eps,
+                    n_step=args.n_step)
         
     if args.model_path:
         model_dir = os.path.dirname(args.model_path)
@@ -92,7 +84,7 @@ def main():
         if args.load_model:
             algorithm.load_model(args.model_path)
     
-    args.figure_path = os.path.join(args.figure_path, 'Rainbow')
+    args.figure_path = os.path.join(args.figure_path, 'MultiStep')
     
     if not os.path.exists(args.figure_path):
         os.makedirs(args.figure_path)

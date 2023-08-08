@@ -42,7 +42,7 @@ class Rainbow(DQN):
         super().__init__(n_observations, n_actions, model, tau, 
                          gamma, epsilon, epsilon_min, epsilon_decay,
                          memory_size, model_path)
-        self.memory = self.memory = PrioritizedReplayBuffer(
+        self.memory = PrioritizedReplayBuffer(
             n_observations, memory_size, batch_size, alpha
         )
         self.beta = beta
@@ -51,12 +51,33 @@ class Rainbow(DQN):
         self.v_min = v_min
         self.v_max = v_max
         self.atom_size = atom_size
+        self.batch_size = batch_size
+        self.alpha = alpha
         self.support = torch.linspace(v_min, v_max, atom_size).to(self.device)
         self.transition = list()
         self.memory_n = ReplayBuffer(
                 n_observations, memory_size, batch_size, n_step=n_step, gamma=gamma
             )
-    
+        
+    def set_multi_agent_env(self, n_agents):
+        self.n_agents = n_agents
+        
+        self.memory = PrioritizedReplayBuffer(
+            self.n_observations, 
+            self.memory_size, 
+            self.batch_size, 
+            self.alpha,
+            n_step=self.n_step * n_agents + 1, 
+        )
+        
+        self.memory_n = ReplayBuffer(
+            self.n_observations, 
+            self.memory_size, 
+            self.batch_size, 
+            n_step=self.n_step * n_agents + 1, 
+            gamma=self.gamma,
+            n_agents=n_agents
+        )
     def reset_memory(self):        
         self.memory.size = 0
         

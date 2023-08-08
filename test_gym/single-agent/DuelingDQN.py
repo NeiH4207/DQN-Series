@@ -8,12 +8,12 @@ import logging
 import os
 import torch
 from tqdm import tqdm
-from utils import *
+from src.utils import *
 log = logging.getLogger(__name__)
 from argparse import ArgumentParser
 
 from algorithms.DQN import DQN
-from models.CartPole.DQN import CartPole
+from models.CartPole.DuelingNet import CartPole
 import gym
 
 def argument_parser():
@@ -74,7 +74,7 @@ def main():
         if args.load_model:
             algorithm.load_model(args.model_path)
     
-    args.figure_path = os.path.join(args.figure_path, 'DQN')
+    args.figure_path = os.path.join(args.figure_path, 'DuelingDQN')
     
     if not os.path.exists(args.figure_path):
         os.makedirs(args.figure_path)

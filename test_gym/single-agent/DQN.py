@@ -8,12 +8,12 @@ import logging
 import os
 import torch
 from tqdm import tqdm
-from utils import *
+from src.utils import *
 log = logging.getLogger(__name__)
 from argparse import ArgumentParser
 
-from algorithms.NoisyNet import NoisyNet
-from models.CartPole.NoisyNet import CartPole
+from algorithms.DQN import DQN
+from models.CartPole.DQN import CartPole
 import gym
 
 def argument_parser():
@@ -57,16 +57,15 @@ def main():
         lr=args.lr,
     ).to(device)
     
-    algorithm = NoisyNet(
-        n_observations=n_observations, 
-        n_actions=n_actions,
-        model=model,
-        tau=args.tau,
-        gamma=args.gamma,
-        memory_size=args.memory_size,
-        model_path=args.model_path
-    )
-
+    algorithm = DQN(   n_observations=n_observations, 
+                        n_actions=n_actions,
+                        model=model,
+                        tau=args.tau,
+                        gamma=args.gamma,
+                        memory_size=args.memory_size,
+                        model_path=args.model_path
+                    )
+        
     if args.model_path:
         model_dir = os.path.dirname(args.model_path)
         if not os.path.exists(model_dir):
@@ -75,7 +74,7 @@ def main():
         if args.load_model:
             algorithm.load_model(args.model_path)
     
-    args.figure_path = os.path.join(args.figure_path, 'NoisyNet')
+    args.figure_path = os.path.join(args.figure_path, 'DQN')
     
     if not os.path.exists(args.figure_path):
         os.makedirs(args.figure_path)

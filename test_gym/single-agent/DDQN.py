@@ -8,7 +8,7 @@ import logging
 import os
 import torch
 from tqdm import tqdm
-from utils import *
+from src.utils import *
 log = logging.getLogger(__name__)
 from argparse import ArgumentParser
 
