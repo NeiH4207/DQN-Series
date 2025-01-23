@@ -11,21 +11,21 @@ from tqdm import tqdm
 from algorithms.DQN import DQN
 from src.priority import PrioritizedReplayBuffer, ReplayBuffer
 
+
 class Rainbow(DQN):
-    
     def __init__(
-        self, 
+        self,
         n_observations=None,
-        n_actions=None, 
+        n_actions=None,
         model=None,
         # DQN parameters
-        tau=0.005, 
-        gamma=0.99, 
-        epsilon=0.9, 
-        epsilon_min=0.05, 
-        epsilon_decay=0.99, 
-        memory_size=4096, 
-        batch_size=32, 
+        tau=0.005,
+        gamma=0.99,
+        epsilon=0.9,
+        epsilon_min=0.05,
+        epsilon_decay=0.99,
+        memory_size=4096,
+        batch_size=32,
         model_path=None,
         # PER parameters
         alpha: float = 0.2,
@@ -37,11 +37,20 @@ class Rainbow(DQN):
         v_min: float = 0.0,
         v_max: float = 500.0,
         atom_size: int = 51,
-        ):
+    ):
 
-        super().__init__(n_observations, n_actions, model, tau, 
-                         gamma, epsilon, epsilon_min, epsilon_decay,
-                         memory_size, model_path)
+        super().__init__(
+            n_observations,
+            n_actions,
+            model,
+            tau,
+            gamma,
+            epsilon,
+            epsilon_min,
+            epsilon_decay,
+            memory_size,
+            model_path,
+        )
         self.memory = self.memory = PrioritizedReplayBuffer(
             n_observations, memory_size, batch_size, alpha
         )
@@ -54,91 +63,94 @@ class Rainbow(DQN):
         self.support = torch.linspace(v_min, v_max, atom_size).to(self.device)
         self.transition = list()
         self.memory_n = ReplayBuffer(
-                n_observations, memory_size, batch_size, n_step=n_step, gamma=gamma
-            )
-    
-    def reset_memory(self):        
+            n_observations, memory_size, batch_size, n_step=n_step, gamma=gamma
+        )
+
+    def reset_memory(self):
         self.memory.size = 0
-        
+
     def get_action(self, state, valid_actions=None):
         state = torch.FloatTensor(np.array(state)).to(self.device)
         act_values = self.policy_net.predict(state)[0]
         if valid_actions is not None:
-            act_values[~valid_actions] = -float('inf')
+            act_values[~valid_actions] = -float("inf")
         return int(np.argmax(act_values))  # returns action
-        
+
     def calculate_dqn_loss(
-        self, 
-        samples: Dict[str, np.ndarray], 
-        gamma: float
+        self, samples: Dict[str, np.ndarray], gamma: float
     ) -> torch.Tensor:
-            state_batch = Variable(torch.FloatTensor(samples['obs'])).to(self.device)
-            action_batch = Variable(torch.LongTensor(samples['acts'])).to(self.device)
-            next_state_batch = Variable(torch.FloatTensor(samples['next_obs'])).to(self.device)
-            reward_batch = Variable(torch.FloatTensor(samples['rews'])).to(self.device)
-            done_batch = Variable(torch.FloatTensor(samples['done'])).to(self.device)
-            
-            delta_z = float(self.v_max - self.v_min) / (self.atom_size - 1)
-            batch_size = state_batch.size(0)
-            
-            with torch.no_grad():
-                next_action_batch = self.policy_net(next_state_batch).argmax(1)
-                next_dist = self.target_net.dist(next_state_batch)
-                next_dist = next_dist[range(batch_size), next_action_batch]
-            
-                t_z = reward_batch.reshape(-1, 1) + (1 - done_batch).reshape(-1, 1) * gamma \
-                    * self.policy_net.support
-                t_z = t_z.clamp(min=self.v_min, max=self.v_max)
-                b = (t_z - self.v_min) / delta_z
-                l = b.floor().long()
-                u = b.ceil().long()
+        state_batch = Variable(torch.FloatTensor(samples["obs"])).to(self.device)
+        action_batch = Variable(torch.LongTensor(samples["acts"])).to(self.device)
+        next_state_batch = Variable(torch.FloatTensor(samples["next_obs"])).to(
+            self.device
+        )
+        reward_batch = Variable(torch.FloatTensor(samples["rews"])).to(self.device)
+        done_batch = Variable(torch.FloatTensor(samples["done"])).to(self.device)
 
-                offset = (
-                    torch.linspace(
-                        0, (batch_size - 1) * self.atom_size, batch_size
-                    ).long()
-                    .unsqueeze(1)
-                    .expand(batch_size, self.atom_size)
-                    .to(self.device)
-                )
+        delta_z = float(self.v_max - self.v_min) / (self.atom_size - 1)
+        batch_size = state_batch.size(0)
 
-                proj_dist = torch.zeros(next_dist.size(), device=self.device)
-                proj_dist.view(-1).index_add_(
-                    0, (l + offset).view(-1), (next_dist * (u.float() - b)).view(-1)
-                )
-                proj_dist.view(-1).index_add_(
-                    0, (u + offset).view(-1), (next_dist * (b - l.float())).view(-1)
-                )
+        with torch.no_grad():
+            next_action_batch = self.policy_net(next_state_batch).argmax(1)
+            next_dist = self.target_net.dist(next_state_batch)
+            next_dist = next_dist[range(batch_size), next_action_batch]
 
-            dist = self.policy_net.dist(state_batch)
-            log_p = torch.log(dist[range(batch_size), action_batch])
-            elementwise_loss = -(proj_dist * log_p).sum(1)
-            return elementwise_loss
-    
+            t_z = (
+                reward_batch.reshape(-1, 1)
+                + (1 - done_batch).reshape(-1, 1) * gamma * self.policy_net.support
+            )
+            t_z = t_z.clamp(min=self.v_min, max=self.v_max)
+            b = (t_z - self.v_min) / delta_z
+            l = b.floor().long()
+            u = b.ceil().long()
+
+            offset = (
+                torch.linspace(0, (batch_size - 1) * self.atom_size, batch_size)
+                .long()
+                .unsqueeze(1)
+                .expand(batch_size, self.atom_size)
+                .to(self.device)
+            )
+
+            proj_dist = torch.zeros(next_dist.size(), device=self.device)
+            proj_dist.view(-1).index_add_(
+                0, (l + offset).view(-1), (next_dist * (u.float() - b)).view(-1)
+            )
+            proj_dist.view(-1).index_add_(
+                0, (u + offset).view(-1), (next_dist * (b - l.float())).view(-1)
+            )
+
+        dist = self.policy_net.dist(state_batch)
+        log_p = torch.log(dist[range(batch_size), action_batch])
+        elementwise_loss = -(proj_dist * log_p).sum(1)
+        return elementwise_loss
+
     def replay(self, batch_size, verbose=False):
 
         if len(self.memory) < batch_size:
-            return 0 
-        
+            return 0
+
         if verbose:
-            _tqdm = tqdm(range(len(self.memory) // batch_size + 1), desc='Replay')
+            _tqdm = tqdm(range(len(self.memory) // batch_size + 1), desc="Replay")
         else:
             _tqdm = range(len(self.memory) // batch_size + 1)
         total_loss = 0
         self.policy_net.train()
-        
+
         for i in _tqdm:
             samples = self.memory.sample_batch(self.beta)
-            weight_batch = Variable(torch.FloatTensor(samples['weights'])).to(self.device)
+            weight_batch = Variable(torch.FloatTensor(samples["weights"])).to(
+                self.device
+            )
             elementwise_loss = self.calculate_dqn_loss(samples, self.gamma)
             loss = torch.mean(elementwise_loss * weight_batch)
-            
-            n_step_samples = self.memory_n.sample_batch_from_idxs(samples['indices'])
-            gamma = self.gamma ** self.n_step
+
+            n_step_samples = self.memory_n.sample_batch_from_idxs(samples["indices"])
+            gamma = self.gamma**self.n_step
             n_elementwise_loss_loss = self.calculate_dqn_loss(n_step_samples, gamma)
             n_loss = torch.mean(n_elementwise_loss_loss * weight_batch)
             loss += n_loss
-                # Optimize the model
+            # Optimize the model
             self.policy_net.optimizer.zero_grad()
             loss.backward()
             # In-place gradient clipping
@@ -148,18 +160,16 @@ class Rainbow(DQN):
             self.soft_update()
             loss_for_prior = elementwise_loss.detach().cpu().numpy()
             new_priorities = loss_for_prior + self.prior_eps
-            self.memory.update_priorities(samples['indices'], new_priorities)
-            
+            self.memory.update_priorities(samples["indices"], new_priorities)
+
             total_loss += loss.item()
             mean_loss = total_loss / (i + 1)
-            
+
         self.policy_net.add_loss(mean_loss)
         self.policy_net.reset_noise()
         self.target_net.reset_noise()
-        
+
         return self.policy_net.get_loss()
-        
-    
+
     def update_beta(self):
         self.beta = min(1.0, self.beta + 1e-4)
-        

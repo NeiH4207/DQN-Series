@@ -8,14 +8,15 @@ from torch import optim as optim
 from models.GymDQN import GymDQN
 from models.NoisyLayer import NoisyLinear
 
-class CartPole(GymDQN):
 
+class CartPole(GymDQN):
     def __init__(
-        self, 
-        n_observations: int, 
-        n_actions: int, 
+        self,
+        n_observations: int,
+        n_actions: int,
         optimizer: str = "adamw",
-        lr: float = 0.001) -> None:
+        lr: float = 0.001,
+    ) -> None:
         super(GymDQN, self).__init__()
         self.n_observations = n_observations
         self.n_actions = n_actions
@@ -30,8 +31,8 @@ class CartPole(GymDQN):
     def forward(self, x):
         x = F.relu(self.layer1(x))
         x = F.relu(self.layer2(x))
-        return self.Q(x) 
-    
+        return self.Q(x)
+
     def reset_noise(self):
         """Reset all noisy layers."""
         self.layer2.reset_noise()

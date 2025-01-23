@@ -21,7 +21,7 @@ python test_gym/DQN.py \
     --optimizer adamw \
     --tau 0.01 \
     --gamma 0.99 \
-    --model-path trained_models/model.pt 
+    --model-path trained_models/model.pt
 ```
 
 **Double Deep Q Learning**
@@ -35,7 +35,7 @@ python test_gym/DDQN.py \
     --optimizer adamw \
     --tau 0.01 \
     --gamma 0.99 \
-    --model-path trained_models/model.pt 
+    --model-path trained_models/model.pt
 ```
 
 **Prioritized Experience Replay Deep Q Learning**
@@ -52,7 +52,7 @@ python test_gym/PER.py \
     --alpha 0.2 \
     --beta 0.6 \
     --prior_eps 1e-6 \
-    --model-path trained_models/model.pt 
+    --model-path trained_models/model.pt
 ```
 
 **Multi-step Deep Q Learning**
@@ -70,5 +70,5 @@ python test_gym/MultiStep.py \
     --beta 0.6 \
     --prior_eps 1e-6 \
     --n-step 3 \
-    --model-path trained_models/model.pt 
+    --model-path trained_models/model.pt
 ```
